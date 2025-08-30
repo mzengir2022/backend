@@ -56,6 +56,7 @@ func main() {
 			users.GET("/:id", handlers.GetUser)
 			users.PUT("/:id", handlers.UpdateUser)
 			users.DELETE("/:id", handlers.DeleteUser)
+			users.PUT("/:id/role", handlers.AssignRole)
 		}
 	}
 

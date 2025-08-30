@@ -3,6 +3,7 @@ package handlers
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"my-project/config"
 	"my-project/internal/auth"
 	"my-project/internal/database"
@@ -96,6 +97,47 @@ func TestLogin(t *testing.T) {
 	var response map[string]string
 	json.Unmarshal(w.Body.Bytes(), &response)
 	assert.NotEmpty(t, response["token"])
+}
+
+func TestAssignRole(t *testing.T) {
+	setupDatabase()
+
+	// Create an admin and a regular user
+	admin := models.User{PhoneNumber: "09120000000", Email: "admin@example.com", Password: "password", Role: "admin"}
+	user := models.User{PhoneNumber: "09121111111", Email: "user@example.com", Password: "password", Role: "user"}
+	database.DB.Create(&admin)
+	database.DB.Create(&user)
+
+	auth.InitializeJWT(&config.Config{JWTSecret: "test-secret"})
+	adminToken, _ := auth.GenerateJWT(admin.PhoneNumber, admin.Role)
+	userToken, _ := auth.GenerateJWT(user.PhoneNumber, user.Role)
+
+	r := setupRouter()
+	r.PUT("/users/:id/role", auth.AuthMiddleware(), auth.RoleAuthMiddleware("admin"), AssignRole)
+
+	// Test with admin token (should succeed)
+	newRole := "moderator"
+	reqBody := AssignRoleRequest{Role: newRole}
+	jsonBody, _ := json.Marshal(reqBody)
+	req, _ := http.NewRequest("PUT", "/users/"+fmt.Sprintf("%d", user.ID)+"/role", bytes.NewBuffer(jsonBody))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+adminToken)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	var updatedUser models.User
+	database.DB.First(&updatedUser, user.ID)
+	assert.Equal(t, newRole, updatedUser.Role)
+
+	// Test with user token (should fail)
+	req, _ = http.NewRequest("PUT", "/users/"+fmt.Sprintf("%d", admin.ID)+"/role", bytes.NewBuffer(jsonBody))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+userToken)
+	w = httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusForbidden, w.Code)
 }
 
 func TestRequestEmailCode(t *testing.T) {

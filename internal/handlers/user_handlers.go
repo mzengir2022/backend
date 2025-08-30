@@ -177,3 +177,45 @@ func DeleteUser(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "User deleted successfully"})
 }
+
+type AssignRoleRequest struct {
+	Role string `json:"role" binding:"required"`
+}
+
+// AssignRole godoc
+// @Summary      Assign a role to a user
+// @Description  Assign a new role to a user (admin only)
+// @Tags         users
+// @Accept       json
+// @Produce      json
+// @Security     ApiKeyAuth
+// @Param        id    path      int              true  "User ID"
+// @Param        role  body      AssignRoleRequest  true  "New role"
+// @Success      200   {object}  models.User
+// @Failure      400   {object}  map[string]string
+// @Failure      404   {object}  map[string]string
+// @Failure      500   {object}  map[string]string
+// @Router       /api/v1/users/{id}/role [put]
+func AssignRole(c *gin.Context) {
+	id := c.Param("id")
+	var user models.User
+	if err := database.DB.First(&user, id).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+		return
+	}
+
+	var req AssignRoleRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	user.Role = req.Role
+	if err := database.DB.Save(&user).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update user role"})
+		return
+	}
+
+	user.Password = ""
+	c.JSON(http.StatusOK, user)
+}
