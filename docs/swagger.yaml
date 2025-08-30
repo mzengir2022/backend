@@ -1,0 +1,521 @@
+basePath: /
+definitions:
+  handlers.AssignRoleRequest:
+    properties:
+      role:
+        type: string
+    required:
+    - role
+    type: object
+  handlers.LoginRequest:
+    properties:
+      password:
+        type: string
+      phone_number:
+        type: string
+    required:
+    - password
+    - phone_number
+    type: object
+  handlers.RequestCodeRequest:
+    properties:
+      phone_number:
+        type: string
+    required:
+    - phone_number
+    type: object
+  handlers.RequestEmailCodeRequest:
+    properties:
+      email:
+        type: string
+    required:
+    - email
+    type: object
+  handlers.VerifyCodeRequest:
+    properties:
+      code:
+        type: string
+      phone_number:
+        type: string
+    required:
+    - code
+    - phone_number
+    type: object
+  handlers.VerifyEmailCodeRequest:
+    properties:
+      code:
+        type: string
+      email:
+        type: string
+    required:
+    - code
+    - email
+    type: object
+  models.User:
+    properties:
+      created_at:
+        type: string
+      email:
+        type: string
+      id:
+        type: integer
+      phone_number:
+        type: string
+      role:
+        type: string
+      updated_at:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: support@swagger.io
+    name: API Support
+    url: http://www.swagger.io/support
+  description: This is a sample server for a Go project.
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: My Project API
+  version: "1.0"
+paths:
+  /api/v1/users:
+    get:
+      description: Get a list of all users (admin only)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.User'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Get all users
+      tags:
+      - users
+  /api/v1/users/{id}:
+    delete:
+      description: Delete a user by their ID (admin only)
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Delete a user
+      tags:
+      - users
+    get:
+      description: Get a single user by their ID (admin only)
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.User'
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Get a user by ID
+      tags:
+      - users
+    put:
+      consumes:
+      - application/json
+      description: Update a user's information (admin only)
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: User info
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/models.User'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.User'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Update a user
+      tags:
+      - users
+  /api/v1/users/{id}/role:
+    put:
+      consumes:
+      - application/json
+      description: Assign a new role to a user (admin only)
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: New role
+        in: body
+        name: role
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.AssignRoleRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.User'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Assign a role to a user
+      tags:
+      - users
+  /login:
+    post:
+      consumes:
+      - application/json
+      description: Logs in a user with phone number and password
+      parameters:
+      - description: Login credentials
+        in: body
+        name: login
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Logs in a user
+      tags:
+      - auth
+  /login/email/request:
+    post:
+      consumes:
+      - application/json
+      description: Sends a verification code to the user's email
+      parameters:
+      - description: Email
+        in: body
+        name: email
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.RequestEmailCodeRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Requests an email verification code
+      tags:
+      - auth
+  /login/email/verify:
+    post:
+      consumes:
+      - application/json
+      description: Verifies the email code and returns a JWT
+      parameters:
+      - description: Email and code
+        in: body
+        name: verification
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.VerifyEmailCodeRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Verifies an email code
+      tags:
+      - auth
+  /login/sms/request:
+    post:
+      consumes:
+      - application/json
+      description: Sends a verification code to the user's phone number
+      parameters:
+      - description: Phone number
+        in: body
+        name: phone
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.RequestCodeRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Requests an SMS verification code
+      tags:
+      - auth
+  /login/sms/verify:
+    post:
+      consumes:
+      - application/json
+      description: Verifies the SMS code and returns a JWT
+      parameters:
+      - description: Phone number and code
+        in: body
+        name: verification
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.VerifyCodeRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Verifies an SMS code
+      tags:
+      - auth
+  /signup:
+    post:
+      consumes:
+      - application/json
+      description: Creates a new user with phone number, email, and password
+      parameters:
+      - description: User info
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/models.User'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.User'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Create a new user
+      tags:
+      - users
+securityDefinitions:
+  ApiKeyAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
