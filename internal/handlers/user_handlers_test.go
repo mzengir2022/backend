@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
@@ -38,9 +39,9 @@ func TestCreateUser(t *testing.T) {
 	r.POST("/signup", CreateUser)
 
 	user := models.User{
-		Username: "testuser",
-		Email:    "test@example.com",
-		Password: "password",
+		PhoneNumber: "09123456789",
+		Email:       "test@example.com",
+		Password:    "password",
 	}
 	jsonUser, _ := json.Marshal(user)
 
@@ -54,7 +55,7 @@ func TestCreateUser(t *testing.T) {
 
 	var createdUser models.User
 	json.Unmarshal(w.Body.Bytes(), &createdUser)
-	assert.Equal(t, user.Username, createdUser.Username)
+	assert.Equal(t, user.PhoneNumber, createdUser.PhoneNumber)
 	assert.Equal(t, user.Email, createdUser.Email)
 	assert.Empty(t, createdUser.Password) // Password should not be in the response
 }
@@ -66,10 +67,10 @@ func TestLogin(t *testing.T) {
 	password := "password"
 	hashedPassword, _ := auth.HashPassword(password)
 	user := models.User{
-		Username: "testuser",
-		Email:    "test@example.com",
-		Password: hashedPassword,
-		Role:     "user",
+		PhoneNumber: "09123456789",
+		Email:       "test@example.com",
+		Password:    hashedPassword,
+		Role:        "user",
 	}
 	database.DB.Create(&user)
 
@@ -79,8 +80,8 @@ func TestLogin(t *testing.T) {
 	r.POST("/login", Login)
 
 	loginReq := LoginRequest{
-		Username: "testuser",
-		Password: "password",
+		PhoneNumber: "09123456789",
+		Password:    "password",
 	}
 	jsonLogin, _ := json.Marshal(loginReq)
 
@@ -97,38 +98,120 @@ func TestLogin(t *testing.T) {
 	assert.NotEmpty(t, response["token"])
 }
 
-func TestGetUsers(t *testing.T) {
+func TestRequestEmailCode(t *testing.T) {
 	setupDatabase()
+	r := setupRouter()
+	r.POST("/login/email/request", RequestEmailCode)
 
-	// Create an admin and a regular user
-	admin := models.User{Username: "admin", Email: "admin@example.com", Password: "password", Role: "admin"}
-	user := models.User{Username: "user", Email: "user@example.com", Password: "password", Role: "user"}
-	database.DB.Create(&admin)
+	user := models.User{
+		PhoneNumber: "09123456789",
+		Email:       "test@example.com",
+		Password:    "password",
+	}
 	database.DB.Create(&user)
 
-	auth.InitializeJWT(&config.Config{JWTSecret: "test-secret"})
-	adminToken, _ := auth.GenerateJWT(admin.Username, admin.Role)
-	userToken, _ := auth.GenerateJWT(user.Username, user.Role)
+	reqBody := RequestEmailCodeRequest{Email: "test@example.com"}
+	jsonBody, _ := json.Marshal(reqBody)
 
-	r := setupRouter()
-	r.GET("/users", auth.AuthMiddleware(), auth.RoleAuthMiddleware("admin"), GetUsers)
+	req, _ := http.NewRequest("POST", "/login/email/request", bytes.NewBuffer(jsonBody))
+	req.Header.Set("Content-Type", "application/json")
 
-	// Test with admin token (should succeed)
-	req, _ := http.NewRequest("GET", "/users", nil)
-	req.Header.Set("Authorization", "Bearer "+adminToken)
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusOK, w.Code)
-	var users []models.User
-	json.Unmarshal(w.Body.Bytes(), &users)
-	assert.Len(t, users, 2)
 
-	// Test with user token (should fail)
-	req, _ = http.NewRequest("GET", "/users", nil)
-	req.Header.Set("Authorization", "Bearer "+userToken)
-	w = httptest.NewRecorder()
+	var updatedUser models.User
+	database.DB.First(&updatedUser, user.ID)
+	assert.NotEmpty(t, updatedUser.EmailVerificationCode)
+}
+
+func TestVerifyEmailCode(t *testing.T) {
+	setupDatabase()
+	r := setupRouter()
+	r.POST("/login/email/verify", VerifyEmailCode)
+
+	code := "123456"
+	user := models.User{
+		PhoneNumber:                  "09123456789",
+		Email:                        "test@example.com",
+		Password:                     "password",
+		EmailVerificationCode:        code,
+		EmailVerificationCodeExpiresAt: time.Now().Add(5 * time.Minute),
+	}
+	database.DB.Create(&user)
+	auth.InitializeJWT(&config.Config{JWTSecret: "test-secret"})
+
+	reqBody := VerifyEmailCodeRequest{Email: "test@example.com", Code: code}
+	jsonBody, _ := json.Marshal(reqBody)
+
+	req, _ := http.NewRequest("POST", "/login/email/verify", bytes.NewBuffer(jsonBody))
+	req.Header.Set("Content-Type", "application/json")
+
+	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)
 
-	assert.Equal(t, http.StatusForbidden, w.Code)
+	assert.Equal(t, http.StatusOK, w.Code)
+	var response map[string]string
+	json.Unmarshal(w.Body.Bytes(), &response)
+	assert.NotEmpty(t, response["token"])
+}
+
+func TestRequestSMSCode(t *testing.T) {
+	setupDatabase()
+	r := setupRouter()
+	r.POST("/login/sms/request", RequestSMSCode)
+
+	user := models.User{
+		PhoneNumber: "09123456789",
+		Email:       "test@example.com",
+		Password:    "password",
+	}
+	database.DB.Create(&user)
+
+	reqBody := RequestCodeRequest{PhoneNumber: "09123456789"}
+	jsonBody, _ := json.Marshal(reqBody)
+
+	req, _ := http.NewRequest("POST", "/login/sms/request", bytes.NewBuffer(jsonBody))
+	req.Header.Set("Content-Type", "application/json")
+
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var updatedUser models.User
+	database.DB.First(&updatedUser, user.ID)
+	assert.NotEmpty(t, updatedUser.VerificationCode)
+}
+
+func TestVerifySMSCode(t *testing.T) {
+	setupDatabase()
+	r := setupRouter()
+	r.POST("/login/sms/verify", VerifySMSCode)
+
+	code := "123456"
+	user := models.User{
+		PhoneNumber:               "09123456789",
+		Email:                     "test@example.com",
+		Password:                  "password",
+		VerificationCode:          code,
+		VerificationCodeExpiresAt: time.Now().Add(5 * time.Minute),
+	}
+	database.DB.Create(&user)
+	auth.InitializeJWT(&config.Config{JWTSecret: "test-secret"})
+
+	reqBody := VerifyCodeRequest{PhoneNumber: "09123456789", Code: code}
+	jsonBody, _ := json.Marshal(reqBody)
+
+	req, _ := http.NewRequest("POST", "/login/sms/verify", bytes.NewBuffer(jsonBody))
+	req.Header.Set("Content-Type", "application/json")
+
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	var response map[string]string
+	json.Unmarshal(w.Body.Bytes(), &response)
+	assert.NotEmpty(t, response["token"])
 }

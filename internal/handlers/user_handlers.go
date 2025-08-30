@@ -4,16 +4,32 @@ import (
 	"my-project/internal/auth"
 	"my-project/internal/database"
 	"my-project/internal/models"
+	"my-project/pkg/validators"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
 
-// CreateUser creates a new user.
+// CreateUser godoc
+// @Summary      Create a new user
+// @Description  Creates a new user with phone number, email, and password
+// @Tags         users
+// @Accept       json
+// @Produce      json
+// @Param        user  body      models.User  true  "User info"
+// @Success      201   {object}  models.User
+// @Failure      400   {object}  map[string]string
+// @Failure      500   {object}  map[string]string
+// @Router       /signup [post]
 func CreateUser(c *gin.Context) {
 	var user models.User
 	if err := c.ShouldBindJSON(&user); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if !validators.ValidatePersianPhoneNumber(user.PhoneNumber) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid phone number format"})
 		return
 	}
 
@@ -34,7 +50,15 @@ func CreateUser(c *gin.Context) {
 	c.JSON(http.StatusCreated, user)
 }
 
-// GetUsers retrieves all users.
+// GetUsers godoc
+// @Summary      Get all users
+// @Description  Get a list of all users (admin only)
+// @Tags         users
+// @Produce      json
+// @Security     ApiKeyAuth
+// @Success      200  {array}   models.User
+// @Failure      500  {object}  map[string]string
+// @Router       /api/v1/users [get]
 func GetUsers(c *gin.Context) {
 	var users []models.User
 	if err := database.DB.Find(&users).Error; err != nil {
@@ -48,7 +72,16 @@ func GetUsers(c *gin.Context) {
 	c.JSON(http.StatusOK, users)
 }
 
-// GetUser retrieves a single user by ID.
+// GetUser godoc
+// @Summary      Get a user by ID
+// @Description  Get a single user by their ID (admin only)
+// @Tags         users
+// @Produce      json
+// @Security     ApiKeyAuth
+// @Param        id   path      int  true  "User ID"
+// @Success      200  {object}  models.User
+// @Failure      404  {object}  map[string]string
+// @Router       /api/v1/users/{id} [get]
 func GetUser(c *gin.Context) {
 	id := c.Param("id")
 	var user models.User
@@ -61,7 +94,20 @@ func GetUser(c *gin.Context) {
 	c.JSON(http.StatusOK, user)
 }
 
-// UpdateUser updates an existing user.
+// UpdateUser godoc
+// @Summary      Update a user
+// @Description  Update a user's information (admin only)
+// @Tags         users
+// @Accept       json
+// @Produce      json
+// @Security     ApiKeyAuth
+// @Param        id    path      int          true  "User ID"
+// @Param        user  body      models.User  true  "User info"
+// @Success      200   {object}  models.User
+// @Failure      400   {object}  map[string]string
+// @Failure      404   {object}  map[string]string
+// @Failure      500   {object}  map[string]string
+// @Router       /api/v1/users/{id} [put]
 func UpdateUser(c *gin.Context) {
 	id := c.Param("id")
 	var user models.User
@@ -76,8 +122,15 @@ func UpdateUser(c *gin.Context) {
 		return
 	}
 
+	if updatedUser.PhoneNumber != "" {
+		if !validators.ValidatePersianPhoneNumber(updatedUser.PhoneNumber) {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid phone number format"})
+			return
+		}
+		user.PhoneNumber = updatedUser.PhoneNumber
+	}
+
 	// Update user fields
-	user.Username = updatedUser.Username
 	user.Email = updatedUser.Email
 	if updatedUser.Password != "" {
 		hashedPassword, err := auth.HashPassword(updatedUser.Password)
@@ -98,7 +151,17 @@ func UpdateUser(c *gin.Context) {
 	c.JSON(http.StatusOK, user)
 }
 
-// DeleteUser deletes a user.
+// DeleteUser godoc
+// @Summary      Delete a user
+// @Description  Delete a user by their ID (admin only)
+// @Tags         users
+// @Produce      json
+// @Security     ApiKeyAuth
+// @Param        id   path      int  true  "User ID"
+// @Success      200  {object}  map[string]string
+// @Failure      404  {object}  map[string]string
+// @Failure      500  {object}  map[string]string
+// @Router       /api/v1/users/{id} [delete]
 func DeleteUser(c *gin.Context) {
 	id := c.Param("id")
 	var user models.User

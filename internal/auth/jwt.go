@@ -14,16 +14,16 @@ func InitializeJWT(cfg *config.Config) {
 }
 
 type Claims struct {
-	Username string `json:"username"`
-	Role     string `json:"role"`
+	PhoneNumber string `json:"phone_number"`
+	Role        string `json:"role"`
 	jwt.RegisteredClaims
 }
 
-func GenerateJWT(username, role string) (string, error) {
+func GenerateJWT(phoneNumber, role string) (string, error) {
 	expirationTime := time.Now().Add(24 * time.Hour)
 	claims := &Claims{
-		Username: username,
-		Role:     role,
+		PhoneNumber: phoneNumber,
+		Role:        role,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(expirationTime),
 		},
