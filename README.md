@@ -105,3 +105,26 @@ Once the application is running, you can access the Swagger documentation at:
 - `GET /api/v1/users/{id}`: Get a single user by ID.
 - `PUT /api/v1/users/{id}`: Update a user's information.
 - `DELETE /api/v1/users/{id}`: Delete a user.
+- `PUT /api/v1/users/{id}/role`: Assign a role to a user.
+
+### Restaurant Management
+
+- `POST /api/v1/restaurants`: Create a new restaurant (requires authentication).
+- `GET /api/v1/restaurants/{id}`: Get a restaurant's details.
+- `PUT /api/v1/restaurants/{id}`: Update a restaurant (owner or admin only).
+- `DELETE /api/v1/restaurants/{id}`: Delete a restaurant (owner or admin only).
+- `GET /api/v1/restaurants/{id}/qrcode`: Get a QR code for the restaurant's menu.
+- `PUT /api/v1/restaurants/{id}/daily-menu`: Set the daily menu for a restaurant (owner or admin only).
+
+### Menu Management
+
+- `POST /api/v1/restaurants/{id}/menus`: Create a new menu for a restaurant (owner or admin only).
+- `GET /api/v1/menus/{menu_id}`: Get a menu's details.
+- `PUT /api/v1/menus/{menu_id}`: Update a menu (owner or admin only).
+- `DELETE /api/v1/menus/{menu_id}`: Delete a menu (owner or admin only).
+- `POST /api/v1/menus/{menu_id}/items`: Add a new item to a menu (owner or admin only).
+
+### Menu Item Management
+
+- `PUT /api/v1/menu-items/{item_id}`: Update a menu item (owner or admin only).
+- `DELETE /api/v1/menu-items/{item_id}`: Delete a menu item (owner or admin only).

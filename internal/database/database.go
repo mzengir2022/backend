@@ -21,6 +21,6 @@ func Connect(cfg *config.Config) {
 	log.Println("Database connection established")
 
 	// Auto-migrate the schema
-	DB.AutoMigrate(&models.User{})
+	DB.AutoMigrate(&models.User{}, &models.Restaurant{}, &models.Menu{}, &models.MenuItem{})
 	log.Println("Database schema migrated")
 }

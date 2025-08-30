@@ -31,6 +31,13 @@ definitions:
     required:
     - email
     type: object
+  handlers.SetDailyMenuRequest:
+    properties:
+      menu_id:
+        type: integer
+    required:
+    - menu_id
+    type: object
   handlers.VerifyCodeRequest:
     properties:
       code:
@@ -50,6 +57,69 @@ definitions:
     required:
     - code
     - email
+    type: object
+  models.Menu:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: integer
+      items:
+        items:
+          $ref: '#/definitions/models.MenuItem'
+        type: array
+      name:
+        type: string
+      restaurant_id:
+        type: integer
+      updated_at:
+        type: string
+    required:
+    - name
+    type: object
+  models.MenuItem:
+    properties:
+      created_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: integer
+      menu_id:
+        type: integer
+      name:
+        type: string
+      price:
+        type: number
+      updated_at:
+        type: string
+    required:
+    - name
+    - price
+    type: object
+  models.Restaurant:
+    properties:
+      address:
+        type: string
+      created_at:
+        type: string
+      daily_menu_id:
+        type: integer
+      id:
+        type: integer
+      menus:
+        items:
+          $ref: '#/definitions/models.Menu'
+        type: array
+      name:
+        type: string
+      updated_at:
+        type: string
+      user_id:
+        type: integer
+    required:
+    - address
+    - name
     type: object
   models.User:
     properties:
@@ -80,6 +150,491 @@ info:
   title: My Project API
   version: "1.0"
 paths:
+  /api/v1/menu-items/{item_id}:
+    delete:
+      description: Delete a menu item by its ID (owner or admin only)
+      parameters:
+      - description: Menu Item ID
+        in: path
+        name: item_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Delete a menu item
+      tags:
+      - menu-items
+    put:
+      consumes:
+      - application/json
+      description: Update a menu item's information (owner or admin only)
+      parameters:
+      - description: Menu Item ID
+        in: path
+        name: item_id
+        required: true
+        type: integer
+      - description: Menu item info
+        in: body
+        name: item
+        required: true
+        schema:
+          $ref: '#/definitions/models.MenuItem'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.MenuItem'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Update a menu item
+      tags:
+      - menu-items
+  /api/v1/menus/{menu_id}:
+    delete:
+      description: Delete a menu by its ID (owner or admin only)
+      parameters:
+      - description: Menu ID
+        in: path
+        name: menu_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Delete a menu
+      tags:
+      - menus
+    get:
+      description: Get details for a single menu, including its items
+      parameters:
+      - description: Menu ID
+        in: path
+        name: menu_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Menu'
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get a menu by ID
+      tags:
+      - menus
+    put:
+      consumes:
+      - application/json
+      description: Update a menu's name (owner or admin only)
+      parameters:
+      - description: Menu ID
+        in: path
+        name: menu_id
+        required: true
+        type: integer
+      - description: Menu info
+        in: body
+        name: menu
+        required: true
+        schema:
+          $ref: '#/definitions/models.Menu'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Menu'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Update a menu
+      tags:
+      - menus
+  /api/v1/menus/{menu_id}/items:
+    post:
+      consumes:
+      - application/json
+      description: Adds a new item to a menu (owner or admin only)
+      parameters:
+      - description: Menu ID
+        in: path
+        name: menu_id
+        required: true
+        type: integer
+      - description: Menu item info
+        in: body
+        name: item
+        required: true
+        schema:
+          $ref: '#/definitions/models.MenuItem'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.MenuItem'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Add a menu item
+      tags:
+      - menus
+  /api/v1/restaurants:
+    post:
+      consumes:
+      - application/json
+      description: Creates a new restaurant for the authenticated user
+      parameters:
+      - description: Restaurant info
+        in: body
+        name: restaurant
+        required: true
+        schema:
+          $ref: '#/definitions/models.Restaurant'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.Restaurant'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Create a new restaurant
+      tags:
+      - restaurants
+  /api/v1/restaurants/{id}:
+    delete:
+      description: Delete a restaurant by its ID (owner or admin only)
+      parameters:
+      - description: Restaurant ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Delete a restaurant
+      tags:
+      - restaurants
+    get:
+      description: Get details for a single restaurant
+      parameters:
+      - description: Restaurant ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Restaurant'
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get a restaurant by ID
+      tags:
+      - restaurants
+    put:
+      consumes:
+      - application/json
+      description: Update a restaurant's information (owner or admin only)
+      parameters:
+      - description: Restaurant ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Restaurant info
+        in: body
+        name: restaurant
+        required: true
+        schema:
+          $ref: '#/definitions/models.Restaurant'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Restaurant'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Update a restaurant
+      tags:
+      - restaurants
+  /api/v1/restaurants/{id}/daily-menu:
+    put:
+      consumes:
+      - application/json
+      description: Sets a specific menu as the daily menu for a restaurant (owner
+        or admin only)
+      parameters:
+      - description: Restaurant ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Daily Menu info
+        in: body
+        name: daily_menu
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.SetDailyMenuRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Set the daily menu for a restaurant
+      tags:
+      - restaurants
+  /api/v1/restaurants/{id}/menus:
+    post:
+      consumes:
+      - application/json
+      description: Creates a new menu for a restaurant (owner or admin only)
+      parameters:
+      - description: Restaurant ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Menu info
+        in: body
+        name: menu
+        required: true
+        schema:
+          $ref: '#/definitions/models.Menu'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.Menu'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Create a new menu
+      tags:
+      - menus
+  /api/v1/restaurants/{id}/qrcode:
+    get:
+      description: Generates and returns a QR code image linking to the restaurant's
+        menu URL
+      parameters:
+      - description: Restaurant ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - image/png
+      responses:
+        "200":
+          description: QR code image
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Generate a QR code for a restaurant's menu
+      tags:
+      - restaurants
   /api/v1/users:
     get:
       description: Get a list of all users (admin only)

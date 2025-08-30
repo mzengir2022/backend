@@ -47,7 +47,7 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	token, err := auth.GenerateJWT(user.PhoneNumber, user.Role)
+	token, err := auth.GenerateJWT(user.ID, user.PhoneNumber, user.Role)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
 		return
@@ -141,7 +141,7 @@ func VerifySMSCode(c *gin.Context) {
 	user.VerificationCode = ""
 	database.DB.Save(&user)
 
-	token, err := auth.GenerateJWT(user.PhoneNumber, user.Role)
+	token, err := auth.GenerateJWT(user.ID, user.PhoneNumber, user.Role)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
 		return
@@ -232,7 +232,7 @@ func VerifyEmailCode(c *gin.Context) {
 	user.EmailVerificationCode = ""
 	database.DB.Save(&user)
 
-	token, err := auth.GenerateJWT(user.PhoneNumber, user.Role)
+	token, err := auth.GenerateJWT(user.ID, user.PhoneNumber, user.Role)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
 		return

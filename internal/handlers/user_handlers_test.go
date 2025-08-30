@@ -109,8 +109,8 @@ func TestAssignRole(t *testing.T) {
 	database.DB.Create(&user)
 
 	auth.InitializeJWT(&config.Config{JWTSecret: "test-secret"})
-	adminToken, _ := auth.GenerateJWT(admin.PhoneNumber, admin.Role)
-	userToken, _ := auth.GenerateJWT(user.PhoneNumber, user.Role)
+	adminToken, _ := auth.GenerateJWT(admin.ID, admin.PhoneNumber, admin.Role)
+	userToken, _ := auth.GenerateJWT(user.ID, user.PhoneNumber, user.Role)
 
 	r := setupRouter()
 	r.PUT("/users/:id/role", auth.AuthMiddleware(), auth.RoleAuthMiddleware("admin"), AssignRole)
