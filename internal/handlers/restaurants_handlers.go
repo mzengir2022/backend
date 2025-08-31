@@ -10,6 +10,16 @@ import (
 	"github.com/skip2/go-qrcode"
 )
 
+// DTOs for Restaurant Handlers
+type CreateRestaurantRequest struct {
+	Name    string `json:"name" binding:"required"`
+	Address string `json:"address" binding:"required"`
+}
+type UpdateRestaurantRequest struct {
+	Name    string `json:"name"`
+	Address string `json:"address"`
+}
+
 // CreateRestaurant godoc
 // @Summary      Create a new restaurant
 // @Description  Creates a new restaurant for the authenticated user
@@ -17,20 +27,24 @@ import (
 // @Accept       json
 // @Produce      json
 // @Security     ApiKeyAuth
-// @Param        restaurant  body      models.Restaurant  true  "Restaurant info"
+// @Param        restaurant  body      CreateRestaurantRequest  true  "Restaurant info"
 // @Success      201         {object}  models.Restaurant
 // @Failure      400         {object}  map[string]string
 // @Failure      500         {object}  map[string]string
 // @Router       /api/v1/restaurants [post]
 func CreateRestaurant(c *gin.Context) {
-	var restaurant models.Restaurant
-	if err := c.ShouldBindJSON(&restaurant); err != nil {
+	var req CreateRestaurantRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
 	userID, _ := c.Get("user_id")
-	restaurant.UserID = userID.(uint)
+	restaurant := models.Restaurant{
+		Name:    req.Name,
+		Address: req.Address,
+		UserID:  userID.(uint),
+	}
 
 	if err := database.DB.Create(&restaurant).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create restaurant"})
@@ -67,8 +81,8 @@ func GetRestaurant(c *gin.Context) {
 // @Accept       json
 // @Produce      json
 // @Security     ApiKeyAuth
-// @Param        id          path      int                true  "Restaurant ID"
-// @Param        restaurant  body      models.Restaurant  true  "Restaurant info"
+// @Param        id          path      int                      true  "Restaurant ID"
+// @Param        restaurant  body      UpdateRestaurantRequest  true  "Restaurant info"
 // @Success      200         {object}  models.Restaurant
 // @Failure      400         {object}  map[string]string
 // @Failure      404         {object}  map[string]string
@@ -82,14 +96,18 @@ func UpdateRestaurant(c *gin.Context) {
 		return
 	}
 
-	var updatedRestaurant models.Restaurant
-	if err := c.ShouldBindJSON(&updatedRestaurant); err != nil {
+	var req UpdateRestaurantRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	restaurant.Name = updatedRestaurant.Name
-	restaurant.Address = updatedRestaurant.Address
+	if req.Name != "" {
+		restaurant.Name = req.Name
+	}
+	if req.Address != "" {
+		restaurant.Address = req.Address
+	}
 
 	if err := database.DB.Save(&restaurant).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update restaurant"})
@@ -126,6 +144,12 @@ func DeleteRestaurant(c *gin.Context) {
 }
 
 // Menu Handlers
+type CreateMenuRequest struct {
+	Name string `json:"name" binding:"required"`
+}
+type UpdateMenuRequest struct {
+	Name string `json:"name" binding:"required"`
+}
 
 // CreateMenu godoc
 // @Summary      Create a new menu
@@ -134,21 +158,24 @@ func DeleteRestaurant(c *gin.Context) {
 // @Accept       json
 // @Produce      json
 // @Security     ApiKeyAuth
-// @Param        id    path      int          true  "Restaurant ID"
-// @Param        menu  body      models.Menu  true  "Menu info"
+// @Param        id    path      int                true  "Restaurant ID"
+// @Param        menu  body      CreateMenuRequest  true  "Menu info"
 // @Success      201   {object}  models.Menu
 // @Failure      400   {object}  map[string]string
 // @Failure      500   {object}  map[string]string
 // @Router       /api/v1/restaurants/{id}/menus [post]
 func CreateMenu(c *gin.Context) {
-	restaurantID := c.Param("id")
-	var menu models.Menu
-	if err := c.ShouldBindJSON(&menu); err != nil {
+	restaurantID := Atoi(c.Param("id"))
+	var req CreateMenuRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	menu.RestaurantID = Atoi(restaurantID)
+	menu := models.Menu{
+		Name:         req.Name,
+		RestaurantID: restaurantID,
+	}
 
 	if err := database.DB.Create(&menu).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create menu"})
@@ -158,6 +185,18 @@ func CreateMenu(c *gin.Context) {
 	c.JSON(http.StatusCreated, menu)
 }
 
+// MenuItem Handlers
+type AddMenuItemRequest struct {
+	Name        string  `json:"name" binding:"required"`
+	Description string  `json:"description"`
+	Price       float64 `json:"price" binding:"required"`
+}
+type UpdateMenuItemRequest struct {
+	Name        string  `json:"name"`
+	Description string  `json:"description"`
+	Price       float64 `json:"price"`
+}
+
 // AddMenuItem godoc
 // @Summary      Add a menu item
 // @Description  Adds a new item to a menu (owner or admin only)
@@ -165,21 +204,26 @@ func CreateMenu(c *gin.Context) {
 // @Accept       json
 // @Produce      json
 // @Security     ApiKeyAuth
-// @Param        menu_id  path      int              true  "Menu ID"
-// @Param        item     body      models.MenuItem  true  "Menu item info"
+// @Param        menu_id  path      int                 true  "Menu ID"
+// @Param        item     body      AddMenuItemRequest  true  "Menu item info"
 // @Success      201      {object}  models.MenuItem
 // @Failure      400      {object}  map[string]string
 // @Failure      500      {object}  map[string]string
 // @Router       /api/v1/menus/{menu_id}/items [post]
 func AddMenuItem(c *gin.Context) {
-	menuID := c.Param("menu_id")
-	var item models.MenuItem
-	if err := c.ShouldBindJSON(&item); err != nil {
+	menuID := Atoi(c.Param("menu_id"))
+	var req AddMenuItemRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	item.MenuID = Atoi(menuID)
+	item := models.MenuItem{
+		Name:        req.Name,
+		Description: req.Description,
+		Price:       req.Price,
+		MenuID:      menuID,
+	}
 
 	if err := database.DB.Create(&item).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to add menu item"})
@@ -215,8 +259,8 @@ func GetMenu(c *gin.Context) {
 // @Accept       json
 // @Produce      json
 // @Security     ApiKeyAuth
-// @Param        menu_id  path      int          true  "Menu ID"
-// @Param        menu     body      models.Menu  true  "Menu info"
+// @Param        menu_id  path      int                true  "Menu ID"
+// @Param        menu     body      UpdateMenuRequest  true  "Menu info"
 // @Success      200      {object}  models.Menu
 // @Failure      400      {object}  map[string]string
 // @Failure      404      {object}  map[string]string
@@ -230,12 +274,12 @@ func UpdateMenu(c *gin.Context) {
 		return
 	}
 
-	var updatedMenu models.Menu
-	if err := c.ShouldBindJSON(&updatedMenu); err != nil {
+	var req UpdateMenuRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	menu.Name = updatedMenu.Name
+	menu.Name = req.Name
 
 	if err := database.DB.Save(&menu).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update menu"})
@@ -270,8 +314,6 @@ func DeleteMenu(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Menu deleted successfully"})
 }
 
-// MenuItem Handlers
-
 // UpdateMenuItem godoc
 // @Summary      Update a menu item
 // @Description  Update a menu item's information (owner or admin only)
@@ -279,8 +321,8 @@ func DeleteMenu(c *gin.Context) {
 // @Accept       json
 // @Produce      json
 // @Security     ApiKeyAuth
-// @Param        item_id  path      int              true  "Menu Item ID"
-// @Param        item     body      models.MenuItem  true  "Menu item info"
+// @Param        item_id  path      int                    true  "Menu Item ID"
+// @Param        item     body      UpdateMenuItemRequest  true  "Menu item info"
 // @Success      200      {object}  models.MenuItem
 // @Failure      400      {object}  map[string]string
 // @Failure      404      {object}  map[string]string
@@ -294,14 +336,21 @@ func UpdateMenuItem(c *gin.Context) {
 		return
 	}
 
-	var updatedItem models.MenuItem
-	if err := c.ShouldBindJSON(&updatedItem); err != nil {
+	var req UpdateMenuItemRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	item.Name = updatedItem.Name
-	item.Description = updatedItem.Description
-	item.Price = updatedItem.Price
+
+	if req.Name != "" {
+		item.Name = req.Name
+	}
+	if req.Description != "" {
+		item.Description = req.Description
+	}
+	if req.Price != 0 {
+		item.Price = req.Price
+	}
 
 	if err := database.DB.Save(&item).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update menu item"})

@@ -10,35 +10,46 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+type CreateUserRequest struct {
+	PhoneNumber string `json:"phone_number" binding:"required"`
+	Email       string `json:"email" binding:"required"`
+	Password    string `json:"password" binding:"required"`
+}
+
 // CreateUser godoc
 // @Summary      Create a new user
 // @Description  Creates a new user with phone number, email, and password
 // @Tags         users
 // @Accept       json
 // @Produce      json
-// @Param        user  body      models.User  true  "User info"
+// @Param        user  body      CreateUserRequest  true  "User info"
 // @Success      201   {object}  models.User
 // @Failure      400   {object}  map[string]string
 // @Failure      500   {object}  map[string]string
 // @Router       /signup [post]
 func CreateUser(c *gin.Context) {
-	var user models.User
-	if err := c.ShouldBindJSON(&user); err != nil {
+	var req CreateUserRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	if !validators.ValidatePersianPhoneNumber(user.PhoneNumber) {
+	if !validators.ValidatePersianPhoneNumber(req.PhoneNumber) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid phone number format"})
 		return
 	}
 
-	hashedPassword, err := auth.HashPassword(user.Password)
+	hashedPassword, err := auth.HashPassword(req.Password)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to hash password"})
 		return
 	}
-	user.Password = hashedPassword
+
+	user := models.User{
+		PhoneNumber: req.PhoneNumber,
+		Email:       req.Email,
+		Password:    hashedPassword,
+	}
 
 	if err := database.DB.Create(&user).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user"})
@@ -94,6 +105,12 @@ func GetUser(c *gin.Context) {
 	c.JSON(http.StatusOK, user)
 }
 
+type UpdateUserRequest struct {
+	PhoneNumber string `json:"phone_number"`
+	Email       string `json:"email"`
+	Password    string `json:"password"` // Optional
+}
+
 // UpdateUser godoc
 // @Summary      Update a user
 // @Description  Update a user's information (admin only)
@@ -101,8 +118,8 @@ func GetUser(c *gin.Context) {
 // @Accept       json
 // @Produce      json
 // @Security     ApiKeyAuth
-// @Param        id    path      int          true  "User ID"
-// @Param        user  body      models.User  true  "User info"
+// @Param        id    path      int              true  "User ID"
+// @Param        user  body      UpdateUserRequest  true  "User info"
 // @Success      200   {object}  models.User
 // @Failure      400   {object}  map[string]string
 // @Failure      404   {object}  map[string]string
@@ -116,24 +133,26 @@ func UpdateUser(c *gin.Context) {
 		return
 	}
 
-	var updatedUser models.User
-	if err := c.ShouldBindJSON(&updatedUser); err != nil {
+	var req UpdateUserRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	if updatedUser.PhoneNumber != "" {
-		if !validators.ValidatePersianPhoneNumber(updatedUser.PhoneNumber) {
+	if req.PhoneNumber != "" {
+		if !validators.ValidatePersianPhoneNumber(req.PhoneNumber) {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid phone number format"})
 			return
 		}
-		user.PhoneNumber = updatedUser.PhoneNumber
+		user.PhoneNumber = req.PhoneNumber
 	}
 
-	// Update user fields
-	user.Email = updatedUser.Email
-	if updatedUser.Password != "" {
-		hashedPassword, err := auth.HashPassword(updatedUser.Password)
+	if req.Email != "" {
+		user.Email = req.Email
+	}
+
+	if req.Password != "" {
+		hashedPassword, err := auth.HashPassword(req.Password)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to hash password"})
 			return

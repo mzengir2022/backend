@@ -1,11 +1,53 @@
 basePath: /
 definitions:
+  handlers.AddMenuItemRequest:
+    properties:
+      description:
+        type: string
+      name:
+        type: string
+      price:
+        type: number
+    required:
+    - name
+    - price
+    type: object
   handlers.AssignRoleRequest:
     properties:
       role:
         type: string
     required:
     - role
+    type: object
+  handlers.CreateMenuRequest:
+    properties:
+      name:
+        type: string
+    required:
+    - name
+    type: object
+  handlers.CreateRestaurantRequest:
+    properties:
+      address:
+        type: string
+      name:
+        type: string
+    required:
+    - address
+    - name
+    type: object
+  handlers.CreateUserRequest:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+      phone_number:
+        type: string
+    required:
+    - email
+    - password
+    - phone_number
     type: object
   handlers.LoginRequest:
     properties:
@@ -37,6 +79,39 @@ definitions:
         type: integer
     required:
     - menu_id
+    type: object
+  handlers.UpdateMenuItemRequest:
+    properties:
+      description:
+        type: string
+      name:
+        type: string
+      price:
+        type: number
+    type: object
+  handlers.UpdateMenuRequest:
+    properties:
+      name:
+        type: string
+    required:
+    - name
+    type: object
+  handlers.UpdateRestaurantRequest:
+    properties:
+      address:
+        type: string
+      name:
+        type: string
+    type: object
+  handlers.UpdateUserRequest:
+    properties:
+      email:
+        type: string
+      password:
+        description: Optional
+        type: string
+      phone_number:
+        type: string
     type: object
   handlers.VerifyCodeRequest:
     properties:
@@ -142,7 +217,7 @@ info:
     email: support@swagger.io
     name: API Support
     url: http://www.swagger.io/support
-  description: This is a sample server for a Go project.
+  description: This is a sample server for a Go project with restaurant menu features.
   license:
     name: Apache 2.0
     url: http://www.apache.org/licenses/LICENSE-2.0.html
@@ -200,7 +275,7 @@ paths:
         name: item
         required: true
         schema:
-          $ref: '#/definitions/models.MenuItem'
+          $ref: '#/definitions/handlers.UpdateMenuItemRequest'
       produces:
       - application/json
       responses:
@@ -305,7 +380,7 @@ paths:
         name: menu
         required: true
         schema:
-          $ref: '#/definitions/models.Menu'
+          $ref: '#/definitions/handlers.UpdateMenuRequest'
       produces:
       - application/json
       responses:
@@ -352,7 +427,7 @@ paths:
         name: item
         required: true
         schema:
-          $ref: '#/definitions/models.MenuItem'
+          $ref: '#/definitions/handlers.AddMenuItemRequest'
       produces:
       - application/json
       responses:
@@ -388,7 +463,7 @@ paths:
         name: restaurant
         required: true
         schema:
-          $ref: '#/definitions/models.Restaurant'
+          $ref: '#/definitions/handlers.CreateRestaurantRequest'
       produces:
       - application/json
       responses:
@@ -487,7 +562,7 @@ paths:
         name: restaurant
         required: true
         schema:
-          $ref: '#/definitions/models.Restaurant'
+          $ref: '#/definitions/handlers.UpdateRestaurantRequest'
       produces:
       - application/json
       responses:
@@ -584,7 +659,7 @@ paths:
         name: menu
         required: true
         schema:
-          $ref: '#/definitions/models.Menu'
+          $ref: '#/definitions/handlers.CreateMenuRequest'
       produces:
       - application/json
       responses:
@@ -734,7 +809,7 @@ paths:
         name: user
         required: true
         schema:
-          $ref: '#/definitions/models.User'
+          $ref: '#/definitions/handlers.UpdateUserRequest'
       produces:
       - application/json
       responses:
@@ -1045,7 +1120,7 @@ paths:
         name: user
         required: true
         schema:
-          $ref: '#/definitions/models.User'
+          $ref: '#/definitions/handlers.CreateUserRequest'
       produces:
       - application/json
       responses:
